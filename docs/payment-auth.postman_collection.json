@@ -1,0 +1,440 @@
+{
+  "info": {
+    "_postman_id": "8f6f3a3d-5f88-4b15-9f3e-payment-auth-demo",
+    "name": "Payment Auth Threat Model",
+    "description": "Local Postman collection for the Payment Auth OAuth2 + PKCE reference service.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "clientId",
+      "value": "payment-web"
+    },
+    {
+      "key": "redirectUri",
+      "value": "http://localhost:5173/callback"
+    },
+    {
+      "key": "csrfToken",
+      "value": ""
+    },
+    {
+      "key": "codeVerifier",
+      "value": ""
+    },
+    {
+      "key": "codeChallenge",
+      "value": ""
+    },
+    {
+      "key": "authCode",
+      "value": ""
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "paymentId",
+      "value": "pay_demo_123"
+    },
+    {
+      "key": "idempotencyKey",
+      "value": "order_123_attempt_1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "1. Get CSRF Token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('CSRF token returned', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const json = pm.response.json();",
+              "  pm.expect(json.csrfToken).to.be.a('string');",
+              "  pm.collectionVariables.set('csrfToken', json.csrfToken);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/session/csrf-token",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "session",
+            "csrf-token"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "2. Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Login succeeded', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const json = pm.response.json();",
+              "  pm.expect(json.ok).to.eql(true);",
+              "  pm.collectionVariables.set('csrfToken', json.csrfToken);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"shubham@example.com\",\n  \"password\": \"Password@123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/session/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "session",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "3. OAuth Authorize",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "function base64UrlWordArray(wordArray) {",
+              "  return CryptoJS.enc.Base64.stringify(wordArray)",
+              "    .replace(/\\+/g, '-')",
+              "    .replace(/\\//g, '_')",
+              "    .replace(/=+$/, '');",
+              "}",
+              "",
+              "const verifier = CryptoJS.lib.WordArray.random(32).toString(CryptoJS.enc.Base64)",
+              "  .replace(/\\+/g, '-')",
+              "  .replace(/\\//g, '_')",
+              "  .replace(/=+$/, '');",
+              "const challenge = base64UrlWordArray(CryptoJS.SHA256(verifier));",
+              "",
+              "pm.collectionVariables.set('codeVerifier', verifier);",
+              "pm.collectionVariables.set('codeChallenge', challenge);"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Authorization redirects with code', function () {",
+              "  pm.response.to.have.status(302);",
+              "  const location = pm.response.headers.get('Location');",
+              "  pm.expect(location).to.be.a('string');",
+              "  const redirectUrl = new URL(location);",
+              "  const code = redirectUrl.searchParams.get('code');",
+              "  pm.expect(code).to.be.a('string');",
+              "  pm.collectionVariables.set('authCode', code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/oauth/authorize?response_type=code&client_id={{clientId}}&redirect_uri={{redirectUri}}&scope=openid%20profile%20payments%3Aread%20payments%3Acreate&state=random-state-123&code_challenge={{codeChallenge}}&code_challenge_method=S256",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "oauth",
+            "authorize"
+          ],
+          "query": [
+            {
+              "key": "response_type",
+              "value": "code"
+            },
+            {
+              "key": "client_id",
+              "value": "{{clientId}}"
+            },
+            {
+              "key": "redirect_uri",
+              "value": "{{redirectUri}}"
+            },
+            {
+              "key": "scope",
+              "value": "openid profile payments:read payments:create"
+            },
+            {
+              "key": "state",
+              "value": "random-state-123"
+            },
+            {
+              "key": "code_challenge",
+              "value": "{{codeChallenge}}"
+            },
+            {
+              "key": "code_challenge_method",
+              "value": "S256"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "4. Exchange Code For Tokens",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Tokens returned', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const json = pm.response.json();",
+              "  pm.expect(json.access_token).to.be.a('string');",
+              "  pm.expect(json.refresh_token).to.be.a('string');",
+              "  pm.collectionVariables.set('accessToken', json.access_token);",
+              "  pm.collectionVariables.set('refreshToken', json.refresh_token);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"grant_type\": \"authorization_code\",\n  \"client_id\": \"{{clientId}}\",\n  \"redirect_uri\": \"{{redirectUri}}\",\n  \"code\": \"{{authCode}}\",\n  \"code_verifier\": \"{{codeVerifier}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/oauth/token",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "oauth",
+            "token"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "5. Get Payment",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/payments/{{paymentId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "payments",
+            "{{paymentId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "6. Create Payment",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Payment created or replayed idempotently', function () {",
+              "  pm.expect([200, 201]).to.include(pm.response.code);",
+              "  const json = pm.response.json();",
+              "  pm.collectionVariables.set('paymentId', json.paymentId);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotencyKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"orderId\": \"order_123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/payments",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "payments"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "7. Refresh Token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Refresh rotated tokens', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const json = pm.response.json();",
+              "  pm.collectionVariables.set('accessToken', json.access_token);",
+              "  pm.collectionVariables.set('refreshToken', json.refresh_token);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"grant_type\": \"refresh_token\",\n  \"client_id\": \"{{clientId}}\",\n  \"refresh_token\": \"{{refreshToken}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/oauth/token",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "oauth",
+            "token"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "8. Logout",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/session/logout",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "session",
+            "logout"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

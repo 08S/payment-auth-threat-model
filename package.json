@@ -1,0 +1,29 @@
+{
+  "name": "payment-auth-threat-model",
+  "version": "1.0.0",
+  "description": "Reference OAuth2 + PKCE auth service with JWT validation, secure sessions, CSRF defense, and refresh-token rotation for a payment flow threat model.",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@types/express-session": "latest",
+    "cookie-parser": "latest",
+    "dotenv": "latest",
+    "express": "latest",
+    "express-session": "latest",
+    "helmet": "latest",
+    "jose": "latest",
+    "uuid": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "latest",
+    "@types/express": "latest",
+    "@types/node": "latest",
+    "tsx": "latest",
+    "typescript": "latest"
+  }
+}
