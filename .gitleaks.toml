@@ -1,0 +1,17 @@
+title = "payment-auth-threat-model tuned gitleaks config"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Allow documented local-only placeholders and deterministic demo hashes."
+regexTarget = "match"
+paths = [
+  '''^\.env\.example$''',
+  '''^docs/payment-auth\.postman_collection\.json$''',
+  '''^README\.md$'''
+]
+regexes = [
+  '''replace-with-at-least-64-random-characters-before-production''',
+  '''prod-demo-salt-change-me-32-bytes!!:[A-Za-z0-9_-]+'''
+]

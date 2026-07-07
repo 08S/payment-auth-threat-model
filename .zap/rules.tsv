@@ -1,0 +1,11 @@
+# ZAP rule tuning for this local API-only service.
+# Format: rule_id<TAB>action<TAB>reason
+# Actions: FAIL, WARN, IGNORE
+10010	FAIL	Session cookies must remain HttpOnly.
+10023	FAIL	Debug errors or stack traces must not be exposed by API responses.
+10098	FAIL	CORS/cross-domain policy misconfiguration can expose payment APIs.
+10021	WARN	X-Content-Type-Options is handled by Helmet; warn only for local baseline drift.
+10035	WARN	HSTS requires production HTTPS; local CI DAST runs over HTTP.
+10038	WARN	Content Security Policy is primarily frontend-specific; this service exposes JSON APIs.
+10049	WARN	Non-browser API endpoints may not set every browser-oriented cache directive in local DAST.
+10054	WARN	Cookie SameSite behavior differs between development HTTP and production HTTPS.

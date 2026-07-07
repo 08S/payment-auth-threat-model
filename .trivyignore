@@ -1,0 +1,3 @@
+# Trivy false-positive suppressions belong here.
+# Format: vulnerability or misconfiguration ID, one per line, with a short reason.
+# Keep this file intentionally empty until a finding is reviewed and accepted.

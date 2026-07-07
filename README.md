@@ -52,6 +52,18 @@ When `NODE_ENV=production`, the service now refuses unsafe defaults:
 
 For local development, the service can generate temporary JWT keys automatically. Do not rely on those generated keys in production because tokens will be invalidated on restart and key custody/rotation is not controlled.
 
+## Security CI
+
+GitHub Actions runs merge-gating security checks for:
+
+- SAST: CodeQL and Semgrep
+- DAST: ZAP baseline scan against the local service
+- SCA: npm audit, dependency review, and Trivy filesystem scan
+- Secrets: Gitleaks and Trivy secret scanning
+- Container image: Docker build plus Trivy image scan
+
+Enable branch protection for `main` and require the checks from `.github/workflows/security.yml` before merging pull requests.
+
 ## Demo flow with curl
 
 ### 1. Get CSRF token and session cookie
